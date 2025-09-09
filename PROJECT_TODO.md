@@ -140,14 +140,14 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ## 4. Content-Script <-> Worker Orchestrierung
 
-- [ ] Flow
+- [x] Flow
   1. Content Script fängt Enter/Klick ab.
   2. Deaktiviert Send.
   3. Sendet Text an Worker.
   4. Ersetzt Eingabe durch maskierten Text.
   5. Aktiviert Send, triggert Senden.
-- [ ] Fehlerbehandlung
-  - [ ] Bei Fehler: Snackbar/Toast im DOM (leichtgewichtig), Option „trotzdem senden“.
+- [x] Fehlerbehandlung
+  - [x] Bei Fehler: Snackbar/Toast im DOM (leichtgewichtig), Option „trotzdem senden".
   - [ ] Logging eines Fehlereintrags (siehe §5).
 
 **Akzeptanztest**:
@@ -160,23 +160,23 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ---
 
-## 5. Revisions-Log (IndexedDB) & Upload-Tracking
+## 5. Revisions-Log (IndexedDB) & Upload-Tracking ✅
 
-- [ ] IndexedDB Store
-  - [ ] `revisions`: `{id, ts, site, originalHash, masked, spans, version}`
-  - [ ] `uploads`: `{id, ts, site, filename, size, mime}`
-  - [ ] Migrations + Versionierung
-- [ ] Logging-API
-  - [ ] `logRevision({ original, masked, site, spans })` (Hash statt Klartext für Original)
-  - [ ] `logUpload({ filename, size, mime, site })`
-- [ ] Dateiupload-Hooks
-  - [ ] `input[type=file]` `change` beobachten
-  - [ ] Drag&Drop-Ziele (`drop`) erkennen
-- [ ] Export
-  - [ ] JSON/CSV-Export (optional `chrome.downloads` nutzen)
-  - [ ] Lösch-/Purge-Funktion
+- [x] IndexedDB Store
+  - [x] `revisions`: `{id, ts, site, originalHash, masked, spans, version}`
+  - [x] `uploads`: `{id, ts, site, filename, size, mime}`
+  - [x] Migrations + Versionierung
+- [x] Logging-API
+  - [x] `logRevision({ original, masked, site, spans })` (Hash statt Klartext für Original)
+  - [x] `logUpload({ filename, size, mime, site })`
+- [x] Dateiupload-Hooks
+  - [x] `input[type=file]` `change` beobachten
+  - [x] Drag&Drop-Ziele (`drop`) erkennen
+- [x] Export
+  - [x] JSON/CSV-Export (optional `chrome.downloads` nutzen)
+  - [x] Lösch-/Purge-Funktion
 
-**Akzeptanztest**:
+**Akzeptanztest**: ✅
 - Revision entsteht pro Submit-Vorgang.
 - Upload-Metadaten werden erfasst, ohne Dateiinhalt zu lesen.
 
