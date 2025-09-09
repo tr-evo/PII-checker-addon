@@ -53,6 +53,7 @@ export default defineConfig({
       input: {
         popup: resolve(__dirname, 'extension/ui/popup.html'),
         options: resolve(__dirname, 'extension/ui/options.html'),
+        'workers/pii-worker': resolve(__dirname, 'extension/workers/pii-worker.ts'),
       },
     },
   },

@@ -1,4 +1,6 @@
 import { getSiteConfig, findElement, SiteConfig } from '../../src/selectors/sites';
+import { piiWorkerClient } from '../../src/pii/pii-worker-client';
+import type { PIIDetectionOptions } from '../../src/pii/pii-detector';
 
 interface InterceptorState {
   inputElement: HTMLElement | null;
@@ -37,6 +39,9 @@ class PIIInterceptor {
     
     this.observer = new MutationObserver(this.handleMutations.bind(this));
     this.init();
+    
+    // Preload PII detection models in the background
+    this.preloadPIIModels();
   }
 
   private init(): void {
@@ -204,14 +209,40 @@ class PIIInterceptor {
 
       console.log('[PII Checker] Processing input text for PII masking...');
       
-      // TODO: In next section, we'll add the actual PII masking here
-      // For now, just simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Get PII detection options (could be loaded from storage)
+      const options: PIIDetectionOptions = {
+        minConfidence: 0.7,
+        useNER: true,
+        useDenyList: true,
+        useRegex: true,
+        timeout: 5000
+      };
       
-      console.log('[PII Checker] PII processing complete (placeholder)');
-      
-      // For now, just proceed with original text
-      this.triggerOriginalSubmit();
+      try {
+        // Perform PII masking using the worker
+        const result = await piiWorkerClient.maskText(inputText, options);
+        
+        if (result.spans.length > 0) {
+          console.log(`[PII Checker] Found ${result.spans.length} PII spans, replacing with masked text`);
+          
+          // Replace the input text with masked version
+          this.setInputText(result.maskedText);
+          
+          // Show user notification about masking
+          this.showMaskingNotification(result.spans.length);
+        } else {
+          console.log('[PII Checker] No PII detected, proceeding with original text');
+        }
+        
+        // Proceed with sending (original or masked)
+        this.triggerOriginalSubmit();
+        
+      } catch (error) {
+        console.error('[PII Checker] PII masking failed:', error);
+        this.showError(`PII masking failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Still allow sending in case of failure
+        this.triggerOriginalSubmit();
+      }
       
     } catch (error) {
       console.error('[PII Checker] Error during submit handling:', error);
@@ -253,10 +284,41 @@ class PIIInterceptor {
     this.state.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
-  // This method will be used in the next section for PII masking
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private maskText(text: string): Promise<string> {
-    return Promise.resolve(text);
+  private async preloadPIIModels(): Promise<void> {
+    try {
+      console.log('[PII Checker] Preloading PII detection models...');
+      await piiWorkerClient.preloadModels();
+      console.log('[PII Checker] PII models preloaded successfully');
+    } catch (error) {
+      console.warn('[PII Checker] Failed to preload PII models:', error);
+    }
+  }
+
+  private showMaskingNotification(spanCount: number): void {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      z-index: 10000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    notification.textContent = `🛡️ Masked ${spanCount} PII item${spanCount > 1 ? 's' : ''}`;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        document.body.removeChild(notification);
+      }
+    }, 3000);
   }
 
   private disableSendButton(): void {
