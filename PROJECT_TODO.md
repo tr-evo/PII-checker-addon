@@ -8,31 +8,31 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ## 0. Projekt-Setup
 
-- [ ] Repo initialisieren
-  - [ ] `npm init -y`
-  - [ ] `pnpm` oder `npm` festlegen (Standard: `pnpm`)
-  - [ ] `.editorconfig`, `.nvmrc`, `.gitignore`
-  - [ ] Lizenz + `README.md`
-- [ ] Basis-Ordnerstruktur anlegen
-  - [ ] `extension/manifest.json`
-  - [ ] `extension/content/`
-  - [ ] `extension/background/`
-  - [ ] `extension/workers/`
-  - [ ] `extension/ui/` (Optionen/Popup)
-  - [ ] `extension/assets/`
-  - [ ] `src/pii/` (Masking-Pipeline)
-  - [ ] `src/logging/` (IndexedDB, Export)
-  - [ ] `src/selectors/` (Site-Selector-Map)
-  - [ ] `tests/`
-- [ ] Tooling
-  - [ ] TypeScript + tsconfig
-  - [ ] Vite (Build für MV3), `rollup-plugin-chrome-extension` o.ä.
-  - [ ] ESLint + Prettier (strikt)
-  - [ ] Jest/Vitest für Unit-Tests
+- [x] Repo initialisieren
+  - [x] `npm init -y`
+  - [x] `pnpm` oder `npm` festlegen (Standard: `npm`)
+  - [x] `.editorconfig`, `.nvmrc`, `.gitignore`
+  - [x] Lizenz + `README.md`
+- [x] Basis-Ordnerstruktur anlegen
+  - [x] `extension/manifest.json`
+  - [x] `extension/content/`
+  - [x] `extension/background/`
+  - [x] `extension/workers/`
+  - [x] `extension/ui/` (Optionen/Popup)
+  - [x] `extension/assets/`
+  - [x] `src/pii/` (Masking-Pipeline)
+  - [x] `src/logging/` (IndexedDB, Export)
+  - [x] `src/selectors/` (Site-Selector-Map)
+  - [x] `tests/`
+- [x] Tooling
+  - [x] TypeScript + tsconfig
+  - [x] Vite (Build für MV3) mit `@crxjs/vite-plugin`
+  - [x] ESLint + Prettier (strikt)
+  - [x] Vitest für Unit-Tests
   - [ ] Web Test Runner / Playwright für E2E (optional)
-- [ ] CI
-  - [ ] GitHub Actions: Lint + Test + Build
-  - [ ] Artefakt-Upload `dist/extension.zip`
+- [x] CI
+  - [x] GitHub Actions: Lint + Test + Build
+  - [x] Artefakt-Upload `dist/extension.zip`
 
 **Commit**: `chore: scaffold repo, tooling, ci`
 

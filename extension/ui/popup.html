@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PII Checker</title>
+  <style>
+    body { width: 300px; padding: 20px; }
+    .status { margin-bottom: 10px; }
+    .toggle { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div class="status">
+    <h3>PII Checker</h3>
+    <div id="status">Status: Active</div>
+  </div>
+  
+  <div class="toggle">
+    <label>
+      <input type="checkbox" id="enabled" checked> 
+      Enable PII Protection
+    </label>
+  </div>
+  
+  <div>
+    <button id="options">Open Settings</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
