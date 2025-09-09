@@ -186,13 +186,13 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ---
 
-## 6. Optionen/Settings-UI
+## 6. Optionen/Settings-UI ✅
 
 ---
 
 ## 6.a PII-Typen gezielt aktivieren/deaktivieren
 
-- [ ] Settings-UI: Schalter pro PII-Klasse (`EMAIL`, `PHONE`, `IBAN`, `CARD`, `NAME`, `ADDR`, `URL`, `UUID`, `TAX_ID`, `SSN`, …)
+- [x] Settings-UI: Schalter pro PII-Klasse (`EMAIL`, `PHONE`, `IBAN`, `CARD`, `NAME`, `ADDR`, `URL`, `UUID`, `TAX_ID`, `SSN`, …)
 - [ ] Pipeline respektiert Schalter (Before-Merge filtern)
 - [ ] Presets: „Strikt“, „Balanciert“, „Locker“
 - [ ] Pro-Site Overrides (z. B. Namen erlauben auf internen Tools)

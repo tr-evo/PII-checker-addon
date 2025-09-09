@@ -3,6 +3,8 @@ import { piiWorkerClient } from '../../src/pii/pii-worker-client';
 import type { PIIDetectionOptions } from '../../src/pii/pii-detector';
 import { piiLogger } from '../../src/logging/logger';
 import { uploadTracker } from '../../src/logging/upload-tracker';
+import { settingsService } from '../../src/settings/settings-service';
+import type { AppSettings } from '../../src/settings/settings-storage';
 
 interface InterceptorState {
   inputElement: HTMLElement | null;
@@ -19,6 +21,7 @@ class PIIInterceptor {
   private retryCount = 0;
   private readonly maxRetries = 10;
   private readonly retryDelay = 1000;
+  private currentSettings: AppSettings | null = null;
 
   constructor() {
     this.config = getSiteConfig(window.location.hostname);
@@ -44,6 +47,10 @@ class PIIInterceptor {
     
     // Initialize logger and preload PII detection models in the background
     this.initializeServices();
+    
+    // Load settings and setup listener
+    this.loadSettings();
+    this.setupSettingsListener();
     
     // Start upload tracking
     uploadTracker.startTracking();
@@ -204,6 +211,16 @@ class PIIInterceptor {
       this.state.isProcessing = true;
       this.disableSendButton();
 
+      // Check if protection is enabled
+      const hostname = window.location.hostname;
+      const isProtectionEnabled = await this.isProtectionEnabled(hostname);
+      
+      if (!isProtectionEnabled) {
+        console.log('[PII Checker] Protection disabled, allowing normal submission');
+        this.triggerOriginalSubmit();
+        return;
+      }
+
       // Get input text
       const inputText = this.getInputText();
       if (!inputText.trim()) {
@@ -214,14 +231,13 @@ class PIIInterceptor {
 
       console.log('[PII Checker] Processing input text for PII masking...');
       
-      // Get PII detection options (could be loaded from storage)
-      const options: PIIDetectionOptions = {
-        minConfidence: 0.7,
-        useNER: true,
-        useDenyList: true,
-        useRegex: true,
-        timeout: 5000
-      };
+      // Get PII detection options from settings
+      const options = await this.getDetectionOptions(hostname);
+      if (!options) {
+        console.log('[PII Checker] Could not load detection options, allowing submission');
+        this.triggerOriginalSubmit();
+        return;
+      }
       
       try {
         // Perform PII masking using the worker
@@ -247,9 +263,10 @@ class PIIInterceptor {
         
       } catch (error) {
         console.error('[PII Checker] PII masking failed:', error);
-        this.showError(`PII masking failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Still allow sending in case of failure
-        this.triggerOriginalSubmit();
+        
+        // Handle timeout based on settings
+        const timeoutAction = await settingsService.getTimeoutAction(hostname);
+        await this.handleProcessingError(error, timeoutAction);
       }
       
     } catch (error) {
@@ -259,6 +276,54 @@ class PIIInterceptor {
     } finally {
       this.state.isProcessing = false;
       this.enableSendButton();
+    }
+  }
+
+  private async isProtectionEnabled(hostname: string): Promise<boolean> {
+    if (!this.currentSettings) {
+      // Fallback to settings service if not cached
+      try {
+        this.currentSettings = await settingsService.getSettings();
+      } catch (error) {
+        console.warn('[PII Checker] Failed to load settings for protection check');
+        return true; // Default to enabled for safety
+      }
+    }
+
+    const siteSettings = this.currentSettings.sites[hostname];
+    return this.currentSettings.globalEnabled && (siteSettings?.enabled ?? true);
+  }
+
+  private async getDetectionOptions(hostname: string): Promise<PIIDetectionOptions | null> {
+    try {
+      return await settingsService.getDetectionOptions(hostname);
+    } catch (error) {
+      console.warn('[PII Checker] Failed to get detection options:', error);
+      return null;
+    }
+  }
+
+  private async handleProcessingError(error: any, timeoutAction: 'block' | 'allow' | 'prompt'): Promise<void> {
+    const isTimeout = error.message?.includes('timeout') || error.name === 'TimeoutError';
+    
+    if (isTimeout) {
+      switch (timeoutAction) {
+        case 'block':
+          this.showError('Processing timeout. Message blocked for safety.');
+          return; // Don't trigger submission
+        case 'allow':
+          console.log('[PII Checker] Timeout occurred, allowing submission per settings');
+          this.triggerOriginalSubmit();
+          return;
+        case 'prompt':
+        default:
+          this.showError('Processing timeout. Click to send anyway.');
+          return; // Let user decide via the error message click
+      }
+    } else {
+      // Non-timeout error - show generic error message
+      this.showError(`PII masking failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.triggerOriginalSubmit(); // Still allow sending for non-timeout errors
     }
   }
 
@@ -309,6 +374,47 @@ class PIIInterceptor {
       console.log('[PII Checker] Services initialized successfully');
     } catch (error) {
       console.warn('[PII Checker] Failed to initialize services:', error);
+    }
+  }
+
+  private async loadSettings(): Promise<void> {
+    try {
+      this.currentSettings = await settingsService.getSettings();
+      console.log('[PII Checker] Settings loaded successfully');
+    } catch (error) {
+      console.warn('[PII Checker] Failed to load settings:', error);
+    }
+  }
+
+  private setupSettingsListener(): void {
+    // Listen for settings changes
+    settingsService.addSettingsListener((settings) => {
+      console.log('[PII Checker] Settings updated');
+      this.currentSettings = settings;
+      
+      // Check if protection is enabled for this site
+      this.checkProtectionStatus();
+    });
+
+    // Also listen for runtime messages
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.type === 'SETTINGS_CHANGED') {
+        this.currentSettings = message.settings;
+        this.checkProtectionStatus();
+      }
+    });
+  }
+
+  private async checkProtectionStatus(): Promise<void> {
+    if (!this.currentSettings) return;
+
+    const hostname = window.location.hostname;
+    const siteSettings = this.currentSettings.sites[hostname];
+    const isProtected = this.currentSettings.globalEnabled && (siteSettings?.enabled ?? true);
+
+    if (!isProtected) {
+      console.log('[PII Checker] Protection disabled for this site');
+      this.showStatusMessage('PII protection is disabled for this site', 'warning');
     }
   }
 
@@ -426,6 +532,45 @@ class PIIInterceptor {
         document.body.removeChild(toast);
       }
     }, 5000);
+  }
+
+  private showStatusMessage(message: string, type: 'info' | 'warning' | 'success' = 'info'): void {
+    const notification = document.createElement('div');
+    
+    let backgroundColor = '#17a2b8'; // info
+    let icon = 'ℹ️';
+    
+    if (type === 'warning') {
+      backgroundColor = '#ffc107';
+      icon = '⚠️';
+    } else if (type === 'success') {
+      backgroundColor = '#28a745';
+      icon = '✅';
+    }
+    
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${backgroundColor};
+      color: white;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      z-index: 10000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    notification.textContent = `${icon} ${message}`;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        document.body.removeChild(notification);
+      }
+    }, 4000);
   }
 
   public destroy(): void {
