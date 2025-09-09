@@ -138,7 +138,7 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ---
 
-## 4. Content-Script <-> Worker Orchestrierung
+## 4. Content-Script <-> Worker Orchestrierung ✅
 
 - [x] Flow
   1. Content Script fängt Enter/Klick ab.
@@ -148,15 +148,15 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
   5. Aktiviert Send, triggert Senden.
 - [x] Fehlerbehandlung
   - [x] Bei Fehler: Snackbar/Toast im DOM (leichtgewichtig), Option „trotzdem senden".
-  - [ ] Logging eines Fehlereintrags (siehe §5).
+  - [x] Logging eines Fehlereintrags (siehe §5).
 
-**Akzeptanztest**:
+**Akzeptanztest**: ✅
 - Maskierter Text erscheint im Eingabefeld; Nutzer sendet ihn ab.
 - Bei Fehler zeigt die Extension eine deutliche, aber unaufdringliche Meldung.
 
 **Commit**: `feat(flow): wire content script with worker and replace input with masked text`
 
-🎯 **Meilenstein**: End-to-End Masking im Ziel-DOM
+🎯 **Meilenstein**: End-to-End Masking im Ziel-DOM ✅
 
 ---
 
@@ -220,22 +220,22 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ---
 
-## 7. Qualität, Tests, Datenschutz
+## 7. Qualität, Tests, Datenschutz ✅
 
-- [ ] Unit-Tests
-  - [ ] NER-Wrapper, Regex-Patterns, Masking-Merger
-  - [ ] Selector-Finder, Event-Interceptor
-- [ ] E2E-Smoke (manuell oder Playwright lokal)
+- [x] Unit-Tests
+  - [x] NER-Wrapper, Regex-Patterns, Masking-Merger
+  - [x] Selector-Finder, Event-Interceptor
+- [x] E2E-Smoke (manuell oder Playwright lokal)
 - [ ] Performance-Benchmarks (CI optional)
-- [ ] Security/Privacy
-  - [ ] Keine Remote-Telemetrie
-  - [ ] Least-Privilege Host-Permissions
-  - [ ] DS-GVO-konforme Löschung/Export
-  - [ ] Threat-Model (README-Abschnitt)
+- [x] Security/Privacy
+  - [x] Keine Remote-Telemetrie
+  - [x] Least-Privilege Host-Permissions
+  - [x] DS-GVO-konforme Löschung/Export
+  - [x] Threat-Model (README-Abschnitt)
 
 **Commit**: `test: add unit tests and privacy checks`
 
-🎯 **Meilenstein**: Stabil + geprüft
+🎯 **Meilenstein**: Stabil + geprüft ✅
 
 ---
 
