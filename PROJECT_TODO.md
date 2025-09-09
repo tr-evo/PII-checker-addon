@@ -42,13 +42,13 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ## 1. Manifest V3 & Berechtigungen
 
-- [ ] `manifest.json` mit MV3
-  - [ ] `permissions`: `storage`, `scripting`, `offscreen`
-  - [ ] `host_permissions`: `https://chat.openai.*/*`, `https://chatgpt.com/*`, `https://claude.ai/*`, später erweiterbar
-  - [ ] `content_scripts`: lädt auf erlaubten Hosts, `all_frames: true`
-  - [ ] `background`: `service_worker`
-  - [ ] `action` + `options_page`
-- [ ] Grund-Build läuft, Extension lässt sich im Dev-Mode laden
+- [x] `manifest.json` mit MV3
+  - [x] `permissions`: `storage`, `scripting`, `offscreen`
+  - [x] `host_permissions`: `https://chat.openai.com/*`, `https://chatgpt.com/*`, `https://claude.ai/*`, später erweiterbar
+  - [x] `content_scripts`: lädt auf erlaubten Hosts, `all_frames: true`
+  - [x] `background`: `service_worker`
+  - [x] `action` + `options_page`
+- [x] Grund-Build läuft, Extension lässt sich im Dev-Mode laden
 
 **Commit**: `feat: add MV3 manifest and minimal build`
 
