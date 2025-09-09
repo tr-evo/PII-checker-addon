@@ -58,19 +58,19 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ## 2. Site-Erkennung & DOM-Hooks
 
-- [ ] Selector-Map erstellen (`src/selectors/sites.ts`)
-  - [ ] Hostname-Matches + `inputSel`, `sendSel`
-  - [ ] Fallbacks + Shadow DOM Handling
-- [ ] Content Script (`extension/content/main.ts`)
-  - [ ] `MutationObserver` zum (Re-)Wiring
-  - [ ] Eingabefeld + Send-Button finden
-  - [ ] Keydown-Hook (Enter ohne Shift abfangen; `isComposing` respektieren)
-  - [ ] Click-Hook auf Send-Button
-  - [ ] Deaktivierung von Send während Verarbeitung (inkl. `aria-disabled`)
-  - [ ] Wiederaktivierung nach Masking
-- [ ] Robustheit
-  - [ ] Mehrere Eingabekomponenten (SPA-Reloads)
-  - [ ] Zeitouts + Fehlerpfade
+- [x] Selector-Map erstellen (`src/selectors/sites.ts`)
+  - [x] Hostname-Matches + `inputSel`, `sendSel`
+  - [x] Fallbacks + Shadow DOM Handling
+- [x] Content Script (`extension/content/main.ts`)
+  - [x] `MutationObserver` zum (Re-)Wiring
+  - [x] Eingabefeld + Send-Button finden
+  - [x] Keydown-Hook (Enter ohne Shift abfangen; `isComposing` respektieren)
+  - [x] Click-Hook auf Send-Button
+  - [x] Deaktivierung von Send während Verarbeitung (inkl. `aria-disabled`)
+  - [x] Wiederaktivierung nach Masking
+- [x] Robustheit
+  - [x] Mehrere Eingabekomponenten (SPA-Reloads)
+  - [x] Zeitouts + Fehlerpfade
 
 **Akzeptanztest**:
 - Auf ChatGPT und Claude wird Enter abgefangen, Send-Button kurz deaktiviert, danach wieder aktiv.
