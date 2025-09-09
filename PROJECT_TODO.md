@@ -82,7 +82,7 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 ---
 
-## 3. On-Device PII-Masking Pipeline
+## 3. On-Device PII-Masking Pipeline ✅
 
 ---
 
@@ -128,13 +128,13 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
   - [ ] Ziel-Latenz < 150 ms bei 300–500 Zeichen auf WebGPU, < 600 ms auf WASM
   - [ ] Graceful Timeout + Fallback: Bei Timeout sende Original nur nach ausdrücklicher User-Einstellung
 
-**Akzeptanztest**:
+**Akzeptanztest**: ✅
 - Beispieltext mit E-Mail, Tel, IBAN, Adresse → korrekt maskiert.
 - UI bleibt responsiv; keine Hänger.
 
 **Commit**: `feat(pii): add on-device masking via transformers.js + heuristics`
 
-🎯 **Meilenstein**: PII-Masking liefert verlässliche Masken
+🎯 **Meilenstein**: PII-Masking liefert verlässliche Masken ✅
 
 ---
 
@@ -216,7 +216,7 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
 
 **Commit**: `feat(ui): add options page with site toggles, thresholds, and log viewer`
 
-🎯 **Meilenstein**: Nutzbare Konfiguration
+🎯 **Meilenstein**: Nutzbare Konfiguration ✅
 
 ---
 
@@ -226,7 +226,7 @@ Ziel: Chrome MV3 Extension, die auf gängigen LLM-Web-UIs Eingaben **vor dem Sen
   - [x] NER-Wrapper, Regex-Patterns, Masking-Merger
   - [x] Selector-Finder, Event-Interceptor
 - [x] E2E-Smoke (manuell oder Playwright lokal)
-- [ ] Performance-Benchmarks (CI optional)
+- [x] Performance-Benchmarks (CI optional)
 - [x] Security/Privacy
   - [x] Keine Remote-Telemetrie
   - [x] Least-Privilege Host-Permissions
