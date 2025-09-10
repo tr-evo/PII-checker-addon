@@ -1,4 +1,6 @@
 import type { PIIType } from '../pii/regex-recognizers';
+import { managedStorage, type EffectiveSettings } from './managed-storage';
+// Logger functionality replaced with console for build compatibility
 
 export type PresetType = 'strict' | 'balanced' | 'loose' | 'custom';
 
@@ -167,11 +169,21 @@ export class SettingsStorage {
   private cachedSettings: AppSettings | null = null;
 
   /**
-   * Load settings from storage
+   * Initialize managed storage
    */
-  async loadSettings(): Promise<AppSettings> {
+  async initialize(): Promise<void> {
+    await managedStorage.initialize();
+  }
+
+  /**
+   * Load settings from storage with managed policy applied
+   */
+  async loadSettings(): Promise<EffectiveSettings> {
+    // Ensure managed storage is initialized
+    await this.initialize();
+
     if (this.cachedSettings) {
-      return this.cachedSettings;
+      return managedStorage.mergeSettings(this.cachedSettings);
     }
 
     try {
@@ -182,23 +194,44 @@ export class SettingsStorage {
         console.log('[Settings] No stored settings found, using defaults');
         this.cachedSettings = { ...DEFAULT_SETTINGS };
         await this.saveSettings(this.cachedSettings);
-        return this.cachedSettings;
+        return managedStorage.mergeSettings(this.cachedSettings);
       }
 
       // Merge with defaults to handle version upgrades
       this.cachedSettings = this.mergeWithDefaults(storedSettings);
       
       console.log('[Settings] Loaded settings from storage');
-      return this.cachedSettings;
+      return managedStorage.mergeSettings(this.cachedSettings);
     } catch (error) {
       console.error('[Settings] Failed to load settings:', error);
       this.cachedSettings = { ...DEFAULT_SETTINGS };
-      return this.cachedSettings;
+      return managedStorage.mergeSettings(this.cachedSettings);
     }
   }
 
   /**
-   * Save settings to storage
+   * Check if settings are locked by enterprise policy
+   */
+  isLocked(): boolean {
+    return managedStorage.isLocked();
+  }
+
+  /**
+   * Check if a specific field is locked by policy
+   */
+  isFieldLocked(fieldPath: string): boolean {
+    return managedStorage.isFieldLocked(fieldPath);
+  }
+
+  /**
+   * Get managed policy for auditing
+   */
+  getAuditInfo() {
+    return managedStorage.getAuditInfo();
+  }
+
+  /**
+   * Save settings to storage (respects managed policy locks)
    */
   async saveSettings(settings: AppSettings): Promise<void> {
     try {

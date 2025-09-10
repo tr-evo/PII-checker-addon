@@ -2,12 +2,14 @@ import { settingsService } from '../../src/settings/settings-service';
 import { piiLogger } from '../../src/logging/logger';
 import { exportService } from '../../src/logging/export-service';
 import type { AppSettings, PresetType } from '../../src/settings/settings-storage';
+import type { EffectiveSettings } from '../../src/settings/managed-storage';
 import type { PIITypeInfo } from '../../src/settings/settings-service';
 
 class OptionsUI {
-  private currentSettings: AppSettings | null = null;
+  private currentSettings: EffectiveSettings | null = null;
   private currentPage = 1;
   private pageSize = 20;
+  private isEnterpriseMode = false;
 
   async init() {
     await this.loadSettings();
@@ -19,7 +21,9 @@ class OptionsUI {
   private async loadSettings() {
     try {
       this.currentSettings = await settingsService.getSettings();
+      this.isEnterpriseMode = this.currentSettings._managedSettings?.locked || false;
       this.updateGlobalStatus();
+      this.updateEnterpriseNotice();
     } catch (error) {
       console.error('Failed to load settings:', error);
       this.showNotification('Failed to load settings', 'error');
@@ -106,10 +110,12 @@ class OptionsUI {
 
     const presets = settingsService.getPresetInfo();
     const currentPreset = this.currentSettings.preset;
+    const presetsLocked = this.isFieldLocked('preset') || this.isFieldLocked('uiRestrictions.disablePresetChanges');
 
     container.innerHTML = presets.map(preset => `
-      <div class="preset-option ${preset.value === currentPreset ? 'active' : ''}" data-preset="${preset.value}">
-        <h4>${preset.label}</h4>
+      <div class="preset-option ${preset.value === currentPreset ? 'active' : ''} ${presetsLocked ? 'locked' : ''}" 
+           data-preset="${preset.value}" ${presetsLocked ? 'title="This setting is locked by enterprise policy"' : ''}>
+        <h4>${preset.label} ${presetsLocked ? '🔒' : ''}</h4>
         <p>${preset.description}</p>
       </div>
     `).join('');
@@ -117,8 +123,9 @@ class OptionsUI {
     // Add custom preset if current is custom
     if (currentPreset === 'custom') {
       container.innerHTML += `
-        <div class="preset-option active" data-preset="custom">
-          <h4>Custom</h4>
+        <div class="preset-option active ${presetsLocked ? 'locked' : ''}" data-preset="custom"
+             ${presetsLocked ? 'title="This setting is locked by enterprise policy"' : ''}>
+          <h4>Custom ${presetsLocked ? '🔒' : ''}</h4>
           <p>Your personalized settings</p>
         </div>
       `;
@@ -127,6 +134,11 @@ class OptionsUI {
     // Add event listeners
     container.querySelectorAll('.preset-option').forEach(option => {
       option.addEventListener('click', async () => {
+        if (presetsLocked) {
+          this.showNotification('Preset changes are disabled by enterprise policy', 'error');
+          return;
+        }
+        
         const preset = option.getAttribute('data-preset') as PresetType;
         if (preset !== 'custom') {
           await settingsService.applyPreset(preset);
@@ -162,21 +174,32 @@ class OptionsUI {
 
     const isEnabled = this.currentSettings.pii.enabledTypes[typeInfo.type];
     const confidence = Math.round(this.currentSettings.pii.confidenceThresholds[typeInfo.type] * 100);
+    const isToggleLocked = this.isFieldLocked(`pii.enabledTypes.${typeInfo.type}`);
+    const isSliderLocked = this.isFieldLocked(`pii.confidenceThresholds.${typeInfo.type}`);
+    const isRequired = this.currentSettings._managedSettings && 
+      this.currentSettings._managedSettings.lockedFields?.some(field => 
+        field.includes('compliance.requiredPiiTypes') && 
+        field.includes(typeInfo.type)
+      );
 
     return `
-      <div class="pii-item">
+      <div class="pii-item ${isToggleLocked || isSliderLocked ? 'locked-item' : ''}">
         <div class="pii-info">
-          <h4>${typeInfo.label}</h4>
-          <p>${typeInfo.description}</p>
+          <h4>${typeInfo.label} ${isToggleLocked ? '🔒' : ''} ${isRequired ? '⚠️' : ''}</h4>
+          <p>${typeInfo.description}${isRequired ? ' (Required by policy)' : ''}</p>
         </div>
         <div class="pii-controls">
           <input type="range" class="confidence-slider" 
                  data-type="${typeInfo.type}"
                  min="50" max="100" value="${confidence}" 
-                 ${!isEnabled ? 'disabled' : ''}>
+                 ${!isEnabled || isSliderLocked ? 'disabled' : ''}
+                 ${isSliderLocked ? 'title="This setting is locked by enterprise policy"' : ''}>
           <span class="confidence-value">${confidence}%</span>
-          <label class="toggle-switch">
-            <input type="checkbox" data-type="${typeInfo.type}" ${isEnabled ? 'checked' : ''}>
+          <label class="toggle-switch ${isToggleLocked ? 'locked' : ''}"
+                 ${isToggleLocked ? 'title="This setting is locked by enterprise policy"' : ''}>
+            <input type="checkbox" data-type="${typeInfo.type}" 
+                   ${isEnabled ? 'checked' : ''} 
+                   ${isToggleLocked ? 'disabled' : ''}>
             <span class="slider"></span>
           </label>
         </div>
@@ -193,12 +216,18 @@ class OptionsUI {
         const enabled = target.checked;
 
         if (type && this.currentSettings) {
+          if (this.isFieldLocked(`pii.enabledTypes.${type}`)) {
+            this.showNotification('This PII type is locked by enterprise policy', 'error');
+            target.checked = !enabled; // Revert change
+            return;
+          }
+
           this.currentSettings.pii.enabledTypes[type as keyof typeof this.currentSettings.pii.enabledTypes] = enabled;
           this.currentSettings.preset = 'custom';
           
           // Enable/disable corresponding confidence slider
           const slider = document.querySelector(`input[type="range"][data-type="${type}"]`) as HTMLInputElement;
-          if (slider) {
+          if (slider && !this.isFieldLocked(`pii.confidenceThresholds.${type}`)) {
             slider.disabled = !enabled;
           }
           
@@ -215,6 +244,11 @@ class OptionsUI {
         const confidence = parseInt(target.value) / 100;
         
         if (type && this.currentSettings) {
+          if (this.isFieldLocked(`pii.confidenceThresholds.${type}`)) {
+            this.showNotification('This confidence threshold is locked by enterprise policy', 'error');
+            return;
+          }
+
           this.currentSettings.pii.confidenceThresholds[type as keyof typeof this.currentSettings.pii.confidenceThresholds] = confidence;
           this.currentSettings.preset = 'custom';
           
@@ -267,13 +301,36 @@ class OptionsUI {
 
     const timeoutInput = document.getElementById('timeout') as HTMLInputElement;
     const actionSelect = document.getElementById('timeout-action') as HTMLSelectElement;
+    const exportBtn = document.getElementById('export-settings') as HTMLButtonElement;
+    const importBtn = document.getElementById('import-settings') as HTMLButtonElement;
 
     if (timeoutInput) {
       timeoutInput.value = (this.currentSettings.timeout.processingTimeoutMs / 1000).toString();
+      if (this.isFieldLocked('timeout.processingTimeoutMs')) {
+        timeoutInput.disabled = true;
+        timeoutInput.title = 'This setting is locked by enterprise policy';
+      }
     }
 
     if (actionSelect) {
       actionSelect.value = this.currentSettings.timeout.onTimeoutAction;
+      if (this.isFieldLocked('timeout.onTimeoutAction')) {
+        actionSelect.disabled = true;
+        actionSelect.title = 'This setting is locked by enterprise policy';
+      }
+    }
+
+    // Disable export/import buttons if restricted
+    if (exportBtn && this.isExportDisabled()) {
+      exportBtn.disabled = true;
+      exportBtn.title = 'Data export is disabled by enterprise policy';
+      exportBtn.style.opacity = '0.5';
+    }
+
+    if (importBtn && this.isExportDisabled()) {
+      importBtn.disabled = true;
+      importBtn.title = 'Settings import is disabled by enterprise policy';
+      importBtn.style.opacity = '0.5';
     }
   }
 
@@ -282,8 +339,26 @@ class OptionsUI {
       const stats = await piiLogger.getStats();
       this.renderStatsGrid(stats);
       await this.renderLogTable();
+      this.updateLogButtons();
     } catch (error) {
       console.error('Failed to load log data:', error);
+    }
+  }
+
+  private updateLogButtons() {
+    const exportBtn = document.getElementById('export-logs') as HTMLButtonElement;
+    const clearBtn = document.getElementById('clear-logs') as HTMLButtonElement;
+
+    if (exportBtn && this.isExportDisabled()) {
+      exportBtn.disabled = true;
+      exportBtn.title = 'Log export is disabled by enterprise policy';
+      exportBtn.style.opacity = '0.5';
+    }
+
+    if (clearBtn && this.isFieldLocked('logging.enabled')) {
+      clearBtn.disabled = true;
+      clearBtn.title = 'Log management is disabled by enterprise policy';
+      clearBtn.style.opacity = '0.5';
     }
   }
 
@@ -426,6 +501,11 @@ class OptionsUI {
   }
 
   private async exportSettings() {
+    if (this.isExportDisabled()) {
+      this.showNotification('Data export is disabled by enterprise policy', 'error');
+      return;
+    }
+    
     try {
       const settingsJson = await settingsService.exportSettings();
       const blob = new Blob([settingsJson], { type: 'application/json' });
@@ -474,6 +554,11 @@ class OptionsUI {
   }
 
   private async exportLogs() {
+    if (this.isExportDisabled()) {
+      this.showNotification('Log export is disabled by enterprise policy', 'error');
+      return;
+    }
+    
     try {
       await exportService.downloadLogs({
         format: 'json',
@@ -534,6 +619,38 @@ class OptionsUI {
         document.body.removeChild(notification);
       }
     }, 5000);
+  }
+
+  // Enterprise policy helper methods
+  private isFieldLocked(fieldPath: string): boolean {
+    if (!this.currentSettings?._managedSettings) return false;
+    return this.currentSettings._managedSettings.lockedFields?.includes(fieldPath) || false;
+  }
+
+  private isExportDisabled(): boolean {
+    return this.currentSettings?._managedSettings?.lockedFields?.includes('features.exportDisabled') || false;
+  }
+
+  private updateEnterpriseNotice() {
+    if (!this.isEnterpriseMode) return;
+    
+    const header = document.querySelector('.header');
+    if (header && !header.querySelector('.enterprise-notice')) {
+      const notice = document.createElement('div');
+      notice.className = 'enterprise-notice';
+      notice.style.cssText = `
+        margin-top: 10px;
+        padding: 10px 15px;
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 4px;
+        color: #856404;
+        font-size: 14px;
+        font-weight: 500;
+      `;
+      notice.innerHTML = '🏢 Some settings are managed by your organization and cannot be changed.';
+      header.appendChild(notice);
+    }
   }
 }
 

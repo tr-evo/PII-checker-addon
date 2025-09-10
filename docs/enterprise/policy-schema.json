@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "title": "PII Checker Extension - Enterprise Policy Schema",
+  "description": "Chrome Enterprise policy configuration for PII Checker Extension",
+  "properties": {
+    "locked": {
+      "type": "boolean",
+      "default": false,
+      "title": "Lock All Settings",
+      "description": "When true, prevents users from modifying any extension settings"
+    },
+    "enabledSites": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      },
+      "title": "Enabled Sites (Whitelist)",
+      "description": "List of domains where the extension is allowed to operate. Empty array means all sites are allowed.",
+      "examples": [
+        ["chat.openai.com", "claude.ai", "bard.google.com"]
+      ]
+    },
+    "disabledSites": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      },
+      "title": "Disabled Sites (Blacklist)",
+      "description": "List of domains where the extension is explicitly disabled",
+      "examples": [
+        ["internal.company.com", "dev.staging.com"]
+      ]
+    },
+    "piiToggles": {
+      "type": "object",
+      "title": "PII Type Controls",
+      "description": "Configure which PII types should be detected and masked",
+      "properties": {
+        "EMAIL": { "type": "boolean", "default": true },
+        "PHONE": { "type": "boolean", "default": true },
+        "IBAN": { "type": "boolean", "default": true },
+        "BIC": { "type": "boolean", "default": true },
+        "CARD": { "type": "boolean", "default": true },
+        "NAME": { "type": "boolean", "default": true },
+        "ADDRESS": { "type": "boolean", "default": true },
+        "POSTAL_CODE": { "type": "boolean", "default": true },
+        "URL": { "type": "boolean", "default": false },
+        "UUID": { "type": "boolean", "default": false },
+        "SSN": { "type": "boolean", "default": true },
+        "TAX_ID": { "type": "boolean", "default": true },
+        "DATE_OF_BIRTH": { "type": "boolean", "default": true }
+      },
+      "additionalProperties": false
+    },
+    "thresholds": {
+      "type": "object",
+      "title": "Detection Thresholds",
+      "description": "Confidence thresholds for PII detection (0.0 to 1.0)",
+      "properties": {
+        "EMAIL": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.9 },
+        "PHONE": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.8 },
+        "IBAN": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.95 },
+        "BIC": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.9 },
+        "CARD": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.95 },
+        "NAME": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.7 },
+        "ADDRESS": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.7 },
+        "POSTAL_CODE": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.8 },
+        "URL": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.8 },
+        "UUID": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.9 },
+        "SSN": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.9 },
+        "TAX_ID": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.85 },
+        "DATE_OF_BIRTH": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.8 }
+      },
+      "additionalProperties": false
+    },
+    "timeoutMs": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 60000,
+      "default": 5000,
+      "title": "Processing Timeout (milliseconds)",
+      "description": "Maximum time to wait for PII detection before allowing submission"
+    },
+    "features": {
+      "type": "object",
+      "title": "Feature Controls",
+      "description": "Enable or disable specific extension features",
+      "properties": {
+        "nerEnabled": {
+          "type": "boolean",
+          "default": true,
+          "title": "Named Entity Recognition",
+          "description": "Enable ML-based PII detection using NER models"
+        },
+        "regexEnabled": {
+          "type": "boolean",
+          "default": true,
+          "title": "Regex Pattern Matching",
+          "description": "Enable regex-based PII detection"
+        },
+        "denyListEnabled": {
+          "type": "boolean",
+          "default": true,
+          "title": "Deny-List Matching",
+          "description": "Enable exact pattern matching against known PII patterns"
+        },
+        "loggingForced": {
+          "type": "boolean",
+          "default": false,
+          "title": "Force Activity Logging",
+          "description": "Force activity logging to be enabled (users cannot disable)"
+        },
+        "exportDisabled": {
+          "type": "boolean",
+          "default": false,
+          "title": "Disable Data Export",
+          "description": "Prevent users from exporting activity logs and settings"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dataRetention": {
+      "type": "object",
+      "title": "Data Retention Policies",
+      "description": "Configure how long data is kept",
+      "properties": {
+        "maxRetentionDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "default": 30,
+          "title": "Maximum Retention Period (days)",
+          "description": "Maximum number of days to retain activity logs"
+        },
+        "forceRetention": {
+          "type": "boolean",
+          "default": false,
+          "title": "Force Minimum Retention",
+          "description": "Prevent users from setting retention period below the maximum"
+        },
+        "autoCleanup": {
+          "type": "boolean",
+          "default": true,
+          "title": "Automatic Cleanup",
+          "description": "Automatically delete old data past retention period"
+        }
+      },
+      "additionalProperties": false
+    },
+    "uiRestrictions": {
+      "type": "object",
+      "title": "User Interface Restrictions",
+      "description": "Control which UI elements users can access",
+      "properties": {
+        "hideAdvancedSettings": {
+          "type": "boolean",
+          "default": false,
+          "title": "Hide Advanced Settings",
+          "description": "Hide advanced configuration options from users"
+        },
+        "disablePresetChanges": {
+          "type": "boolean",
+          "default": false,
+          "title": "Disable Preset Changes",
+          "description": "Prevent users from switching between security presets"
+        },
+        "requireAdminPassword": {
+          "type": "boolean",
+          "default": false,
+          "title": "Require Admin Password",
+          "description": "Require administrator password for settings changes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "compliance": {
+      "type": "object",
+      "title": "Compliance Settings",
+      "description": "Regulatory and compliance requirements",
+      "properties": {
+        "auditMode": {
+          "type": "boolean",
+          "default": false,
+          "title": "Audit Mode",
+          "description": "Enable enhanced logging for compliance auditing"
+        },
+        "requiredPiiTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["EMAIL", "PHONE", "IBAN", "BIC", "CARD", "NAME", "ADDRESS", "POSTAL_CODE", "URL", "UUID", "SSN", "TAX_ID", "DATE_OF_BIRTH"]
+          },
+          "title": "Required PII Types",
+          "description": "PII types that must always be enabled (cannot be disabled by users)",
+          "examples": [
+            ["EMAIL", "PHONE", "SSN", "CARD"]
+          ]
+        },
+        "prohibitedSites": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+          },
+          "title": "Prohibited Sites",
+          "description": "Sites where the extension must never operate (overrides enabledSites)",
+          "examples": [
+            ["competitor.com", "public-forum.org"]
+          ]
+        },
+        "mandatoryLogging": {
+          "type": "boolean",
+          "default": false,
+          "title": "Mandatory Logging",
+          "description": "Require activity logging to be enabled at all times"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "locked": true,
+      "enabledSites": ["chat.openai.com", "claude.ai"],
+      "piiToggles": {
+        "EMAIL": true,
+        "PHONE": true,
+        "CARD": true,
+        "SSN": true,
+        "NAME": false,
+        "URL": false
+      },
+      "thresholds": {
+        "EMAIL": 0.95,
+        "PHONE": 0.9,
+        "CARD": 0.99,
+        "SSN": 0.99
+      },
+      "timeoutMs": 3000,
+      "features": {
+        "nerEnabled": true,
+        "regexEnabled": true,
+        "loggingForced": true,
+        "exportDisabled": true
+      },
+      "dataRetention": {
+        "maxRetentionDays": 90,
+        "forceRetention": true,
+        "autoCleanup": true
+      },
+      "compliance": {
+        "auditMode": true,
+        "requiredPiiTypes": ["EMAIL", "PHONE", "CARD", "SSN"],
+        "mandatoryLogging": true
+      }
+    },
+    {
+      "locked": false,
+      "enabledSites": [],
+      "disabledSites": ["internal.company.com"],
+      "piiToggles": {
+        "EMAIL": true,
+        "PHONE": true,
+        "NAME": true
+      },
+      "timeoutMs": 5000,
+      "features": {
+        "nerEnabled": true,
+        "regexEnabled": true,
+        "denyListEnabled": true
+      },
+      "dataRetention": {
+        "maxRetentionDays": 30,
+        "forceRetention": false
+      }
+    }
+  ]
+}
